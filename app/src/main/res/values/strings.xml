@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">Apex Calc</string>
+    <string name="sign_in_with_google">Sign in with Google</string>
+    <string name="auth_subtitle">Sync Encrypted History, Multi-Window Workspaces, Cloud Vault Backups &amp; Gemini 4 Math Lab</string>
+    <string name="continue_offline_hint">Google Sign-In enables real-time multi-device sync, encrypted cloud vault backup, and Gemini AI Lab.</string>
+    <string name="tab_calculator">Calculator</string>
+    <string name="tab_windows">Windows</string>
+    <string name="tab_history">History</string>
+    <string name="tab_ai_lab">AI Math Lab</string>
+    <string name="tab_vault_settings">Vault &amp; Theme</string>
+    <string name="voice_command_desc">Voice Command Input</string>
+    <string name="tts_speak_desc">Speak Result (Gemini TTS)</string>
+    <string name="keyboard_shortcuts_desc">Keyboard Shortcuts Guide</string>
+    <string name="add_window_desc">Add New Calculation Window</string>
+    <string name="save_calculation_desc">Save Calculation to Encrypted History</string>
+    <string name="create_backup_desc">Create Encrypted Cloud Backup</string>
+    <string name="export_drive_desc">Export Encrypted Backup to Google Drive / Dropbox</string>
+    <string name="sign_out_desc">Sign Out</string>
+</resources>

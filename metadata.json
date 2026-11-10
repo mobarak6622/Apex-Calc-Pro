@@ -1,0 +1,6 @@
+{
+  "name": "Apex Calc",
+  "description": "Professional scientific & mathematical calculator with multi-window workspaces, encrypted offline storage, cloud sync, voice commands, and Gemini AI math intelligence.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

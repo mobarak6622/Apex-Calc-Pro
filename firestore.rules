@@ -1,0 +1,165 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 1: Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Hardened Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Validation Blueprint: CalculationRecord
+    function isValidCalculationRecord(data) {
+      return data.userId is string && data.userId == request.auth.uid && data.userId.size() <= 128 &&
+             data.workspaceId is string && data.workspaceId.size() >= 1 && data.workspaceId.size() <= 64 &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 120 &&
+             data.expression is string && data.expression.size() >= 1 && data.expression.size() <= 1000 &&
+             data.result is string && data.result.size() >= 1 && data.result.size() <= 500 &&
+             data.encryptedPayload is string && data.encryptedPayload.size() <= 4000 &&
+             data.isPinned is bool &&
+             data.category is string && data.category.size() >= 1 && data.category.size() <= 40 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    // Validation Blueprint: WorkspaceWindow
+    function isValidWorkspaceWindow(data) {
+      return data.userId is string && data.userId == request.auth.uid && data.userId.size() <= 128 &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 80 &&
+             data.currentExpression is string && data.currentExpression.size() <= 1000 &&
+             data.currentResult is string && data.currentResult.size() <= 500 &&
+             data.memoryValue is string && data.memoryValue.size() <= 100 &&
+             data.angleMode is string && (data.angleMode == 'DEG' || data.angleMode == 'RAD') &&
+             data.accentColorHex is string && data.accentColorHex.size() >= 4 && data.accentColorHex.size() <= 16 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    // Validation Blueprint: CloudBackupVault
+    function isValidCloudBackupVault(data) {
+      return data.userId is string && data.userId == request.auth.uid && data.userId.size() <= 128 &&
+             data.backupName is string && data.backupName.size() >= 1 && data.backupName.size() <= 120 &&
+             data.providerTag is string && data.providerTag.size() >= 1 && data.providerTag.size() <= 40 &&
+             data.encryptedData is string && data.encryptedData.size() >= 1 && data.encryptedData.size() <= 50000 &&
+             data.checksumSha256 is string && data.checksumSha256.size() >= 1 && data.checksumSha256.size() <= 128 &&
+             data.itemCount is int && data.itemCount >= 0 && data.itemCount <= 10000 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    // Collection 1: Per-User Calculation History
+    match /users/{userId}/calculations/{calcId} {
+      allow get: if isOwner(userId) && isValidId(userId) && isValidId(calcId) && existing().userId == request.auth.uid;
+      allow list: if isOwner(userId) && existing().userId == request.auth.uid;
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidId(calcId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'workspaceId', 'title', 'expression', 'result',
+                         'encryptedPayload', 'isPinned', 'category', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'workspaceId', 'title', 'expression', 'result',
+                         'encryptedPayload', 'isPinned', 'category', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidCalculationRecord(incoming());
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidId(calcId) &&
+                       isValidCalculationRecord(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'workspaceId', 'title', 'expression', 'result',
+                         'encryptedPayload', 'isPinned', 'category', 'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(userId) && isValidId(calcId) && existing().userId == request.auth.uid;
+    }
+
+    // Collection 2: Per-User Multiple Calculation Windows (Workspaces)
+    match /users/{userId}/workspaces/{workspaceId} {
+      allow get: if isOwner(userId) && isValidId(userId) && isValidId(workspaceId) && existing().userId == request.auth.uid;
+      allow list: if isOwner(userId) && existing().userId == request.auth.uid;
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidId(workspaceId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'name', 'currentExpression', 'currentResult',
+                         'memoryValue', 'angleMode', 'accentColorHex', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'name', 'currentExpression', 'currentResult',
+                         'memoryValue', 'angleMode', 'accentColorHex', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidWorkspaceWindow(incoming());
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidId(workspaceId) &&
+                       isValidWorkspaceWindow(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'name', 'currentExpression', 'currentResult',
+                         'memoryValue', 'angleMode', 'accentColorHex', 'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(userId) && isValidId(workspaceId) && existing().userId == request.auth.uid;
+    }
+
+    // Collection 3: Per-User Encrypted Cloud Backup Vaults
+    match /users/{userId}/backups/{backupId} {
+      allow get: if isOwner(userId) && isValidId(userId) && isValidId(backupId) && existing().userId == request.auth.uid;
+      allow list: if isOwner(userId) && existing().userId == request.auth.uid;
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidId(backupId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'backupName', 'providerTag', 'encryptedData',
+                         'checksumSha256', 'itemCount', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'backupName', 'providerTag', 'encryptedData',
+                         'checksumSha256', 'itemCount', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidCloudBackupVault(incoming());
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidId(backupId) &&
+                       isValidCloudBackupVault(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'backupName', 'providerTag', 'encryptedData',
+                         'checksumSha256', 'itemCount', 'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(userId) && isValidId(backupId) && existing().userId == request.auth.uid;
+    }
+  }
+}

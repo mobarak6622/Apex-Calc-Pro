@@ -1,0 +1,57 @@
+name: Build & Publish One-Click APK
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Decode Debug Keystore (if base64 present)
+        run: |
+          if [ ! -f debug.keystore ] && [ -f debug.keystore.base64 ]; then
+            base64 -d debug.keystore.base64 > debug.keystore
+          elif [ ! -f debug.keystore ]; then
+            keytool -genkey -v -keystore debug.keystore -alias androiddebugkey -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
+      - name: Build Installable APK
+        run: gradle assembleDebug
+
+      - name: Prepare ApexCalc-Pro.apk
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk ApexCalc-Pro.apk
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ApexCalc-Pro-APK
+          path: ApexCalc-Pro.apk
+
+      - name: Publish to GitHub Releases (One-Click Download)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Apex Calc Pro — Latest One-Click APK"
+          body: "Automated one-click Android APK build for Apex Calc Pro."
+          prerelease: false
+          files: ApexCalc-Pro.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

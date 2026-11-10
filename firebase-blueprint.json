@@ -1,0 +1,187 @@
+{
+  "entities": {
+    "CalculationRecord": {
+      "title": "CalculationRecord",
+      "description": "A mathematical or scientific calculation entry with AES-256-GCM encrypted payload support and workspace association.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "UID of the authenticated owner."
+        },
+        "workspaceId": {
+          "type": "string",
+          "description": "ID of the calculation workspace window."
+        },
+        "title": {
+          "type": "string",
+          "description": "Short label or note for the calculation."
+        },
+        "expression": {
+          "type": "string",
+          "description": "Mathematical expression evaluated."
+        },
+        "result": {
+          "type": "string",
+          "description": "Formatted result of the calculation."
+        },
+        "encryptedPayload": {
+          "type": "string",
+          "description": "AES-256-GCM encrypted JSON payload for zero-knowledge privacy."
+        },
+        "isPinned": {
+          "type": "boolean",
+          "description": "Whether this calculation is pinned to the top of history."
+        },
+        "category": {
+          "type": "string",
+          "description": "Category tag such as STANDARD, SCIENTIFIC, MATRIX, UNIT, AI_SOLVER."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when created via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when last updated via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "userId",
+        "workspaceId",
+        "title",
+        "expression",
+        "result",
+        "encryptedPayload",
+        "isPinned",
+        "category",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "WorkspaceWindow": {
+      "title": "WorkspaceWindow",
+      "description": "An independent calculation window allowing multi-window parallel calculations synced in real time.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "UID of the authenticated owner."
+        },
+        "name": {
+          "type": "string",
+          "description": "Display title of the calculation window (e.g., Physics Lab, Tax Budget)."
+        },
+        "currentExpression": {
+          "type": "string",
+          "description": "Active input expression in this window."
+        },
+        "currentResult": {
+          "type": "string",
+          "description": "Live evaluated result in this window."
+        },
+        "memoryValue": {
+          "type": "string",
+          "description": "Stored memory register value (M+/M-/MR) as string."
+        },
+        "angleMode": {
+          "type": "string",
+          "enum": ["DEG", "RAD"],
+          "description": "Trigonometric angle mode for this workspace."
+        },
+        "accentColorHex": {
+          "type": "string",
+          "description": "Hex color code for visual identification."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when created via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when updated via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "userId",
+        "name",
+        "currentExpression",
+        "currentResult",
+        "memoryValue",
+        "angleMode",
+        "accentColorHex",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "CloudBackupVault": {
+      "title": "CloudBackupVault",
+      "description": "Encrypted backup snapshot of user workspaces, history, and preferences for cloud restore and Google Drive/Dropbox integration.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "UID of the authenticated owner."
+        },
+        "backupName": {
+          "type": "string",
+          "description": "Human-readable backup label."
+        },
+        "providerTag": {
+          "type": "string",
+          "description": "Target cloud provider label (FIREBASE_CLOUD, GOOGLE_DRIVE, DROPBOX)."
+        },
+        "encryptedData": {
+          "type": "string",
+          "description": "AES-256-GCM encrypted backup archive payload."
+        },
+        "checksumSha256": {
+          "type": "string",
+          "description": "SHA-256 integrity hash of the backup payload."
+        },
+        "itemCount": {
+          "type": "integer",
+          "description": "Total number of records stored in this backup."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when created via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when updated via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "userId",
+        "backupName",
+        "providerTag",
+        "encryptedData",
+        "checksumSha256",
+        "itemCount",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/calculations/{calcId}": {
+      "schema": { "$ref": "#/entities/CalculationRecord" },
+      "description": "Per-user calculation history records with encrypted payloads."
+    },
+    "/users/{userId}/workspaces/{workspaceId}": {
+      "schema": { "$ref": "#/entities/WorkspaceWindow" },
+      "description": "Per-user multiple calculation windows synced in real time."
+    },
+    "/users/{userId}/backups/{backupId}": {
+      "schema": { "$ref": "#/entities/CloudBackupVault" },
+      "description": "Per-user encrypted cloud backup vaults."
+    }
+  }
+}
